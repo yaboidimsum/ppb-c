@@ -22,4 +22,56 @@ class TaskService {
     _taskHiveService.addTask(task);
     return true;
   }
+
+  List<MapEntry<dynamic, Task>> getCurrentUserTasks() {
+    if (_userService.currentUser == null) {
+      return [];
+    }
+
+    return _taskHiveService.getTasksForUser(_userService.currentUser!.username);
+  }
+
+  bool updateTask(
+    int taskKey,
+    String title,
+    String description,
+    bool completed,
+  ) {
+    if (_userService.currentUser == null) {
+      return false;
+    }
+
+    final tasks = _taskHiveService.getAllTasks();
+
+    final taskEntry = tasks.firstWhere(
+      (entry) => entry.key == taskKey,
+      orElse:
+          () => MapEntry(
+            -1,
+            Task(
+              title: '',
+              description: '',
+              completed: false,
+              owner: '',
+              id: -1,
+            ),
+          ),
+    );
+
+    if (taskEntry.key == -1 ||
+        taskEntry.value.owner != _userService.currentUser!.username) {
+      return false;
+    }
+
+    final updatedTask = Task(
+      title: title,
+      description: description,
+      completed: completed,
+      owner: _userService.currentUser!.username,
+      id: taskEntry.value.id,
+    );
+
+    _taskHiveService.updateTask(taskKey, updatedTask);
+    return true;
+  }
 }
