@@ -74,4 +74,44 @@ class TaskService {
     _taskHiveService.updateTask(taskKey, updatedTask);
     return true;
   }
+
+  bool deleteTask(int taskKey) {
+    if (_userService.currentUser == null) {
+      return false;
+    }
+
+    final tasks = _taskHiveService.getAllTasks();
+    final taskEntry = tasks.firstWhere(
+      (entry) => entry.key == taskKey,
+      orElse:
+          () => MapEntry(
+            -1,
+            Task(
+              title: '',
+              description: '',
+              completed: false,
+              owner: '',
+              id: -1,
+            ),
+          ),
+    );
+
+    if (taskEntry.key == -1 ||
+        taskEntry.value.owner != _userService.currentUser!.username) {
+      return false;
+    }
+
+    _taskHiveService.deleteTask(taskKey);
+    return true;
+  }
+
+  Task? getTask(int taskKey) {
+    final tasks = _taskHiveService.getAllTasks();
+    try {
+      final taskEntry = tasks.firstWhere((entry) => entry.key == taskKey);
+      return taskEntry.value;
+    } catch (e) {
+      return null;
+    }
+  }
 }

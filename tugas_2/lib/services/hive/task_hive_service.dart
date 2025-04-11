@@ -3,6 +3,7 @@ import '../../models/task_model.dart';
 
 class TaskHiveService {
   final Box _tasksBox = Hive.box('tasksBox');
+  
 
   void addTask(Task task) => _tasksBox.add(task.toMap());
   void updateTask(int key, Task task) => _tasksBox.put(key, task.toMap());

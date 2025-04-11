@@ -3,6 +3,7 @@ import '../../models/user_model.dart';
 
 class UserHiveService {
   final Box _usersBox = Hive.box('usersBox');
+  // final Box _settingsBox = Hive.box('settingsBox');
 
   void saveUser(User user) {
     _usersBox.put(user.username, user.toMap());
@@ -14,4 +15,14 @@ class UserHiveService {
   }
 
   bool userExists(String username) => _usersBox.containsKey(username);
+
+  //Save current username
+  void saveCurrentUsername(String username) {
+    _usersBox.put('currentUsername', username); // Use settings box
+  }
+
+  // Get current username
+  String? getCurrentUsername() {
+    return _usersBox.get('currentUsername') as String?; // Use settings box
+  }
 }

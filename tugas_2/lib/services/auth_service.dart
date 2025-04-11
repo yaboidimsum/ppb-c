@@ -26,6 +26,10 @@ class AuthService {
     final user = _userHiveService.getUser(username);
 
     if (user != null && user.password == password) {
+      _currentUser = user;
+
+      // Save the username to persistent storage
+      _userHiveService.saveCurrentUsername(username);
       return true;
     }
     return false;
@@ -33,6 +37,7 @@ class AuthService {
 
   void logout() {
     _currentUser = null;
+    _userHiveService.saveCurrentUsername('');
   }
 
   bool isUsernameAvailable(String username) {
