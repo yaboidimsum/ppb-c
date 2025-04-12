@@ -15,7 +15,6 @@ void main() async {
   // Open the box
   await Hive.openBox('usersBox');
   await Hive.openBox('tasksBox');
-  await Hive.openBox('settingsBox');
 
   runApp(const MyApp());
 }

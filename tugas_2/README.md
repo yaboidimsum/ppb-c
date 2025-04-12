@@ -766,6 +766,7 @@ Task? getTask(int taskKey) {
 - Retrieves a specific task by its key
 - Uses try-catch to handle cases where the task doesn't exist
 - Returns null if the task is not found
+
 ---
 
 ## Frontend
@@ -773,3 +774,732 @@ Task? getTask(int taskKey) {
 The frontend consists of main, register, login, and task_list_screen
 
 **Main**
+
+The `main.dart` file serves as the entry point for the application. It initializes Hive for local storage and sets up the application's routing system.
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/task/task_list_screen.dart';
+import 'services/user_service.dart';
+
+void main() async {
+  //initilize Hive
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+
+  // Open the box
+  await Hive.openBox('usersBox');
+  await Hive.openBox('tasksBox');
+  await Hive.openBox('settingsBox');
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Task Manager',
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/tasks': (context) => const TaskListScreen(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userService = UserService();
+
+    if (userService.currentUser != null) {
+      return const TaskListScreen();
+    } else {
+      return const LoginScreen();
+    }
+  }
+}
+```
+
+#### Key Components
+
+#### Hive Initialization
+
+```dart
+WidgetsFlutterBinding.ensureInitialized();
+await Hive.initFlutter();
+
+// Open the box
+await Hive.openBox('usersBox');
+await Hive.openBox('tasksBox');
+```
+
+- Ensures Flutter is initialized before async operations
+- Initializes Hive for local storage
+- Opens three Hive boxes for storing users, tasks, and application settings
+
+#### Application Setup
+
+```dart
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Task Manager',
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/tasks': (context) => const TaskListScreen(),
+      },
+    );
+  }
+}
+```
+
+- Creates a MaterialApp with a blue theme and Material 3 design
+- Disables the debug banner for a cleaner UI
+- Sets up named routes for navigation between screens
+- Uses an AuthWrapper as the initial route to handle authentication state
+
+#### Authentication Wrapper
+
+```dart
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userService = UserService();
+
+    if (userService.currentUser != null) {
+      return const TaskListScreen();
+    } else {
+      return const LoginScreen();
+    }
+  }
+}
+```
+
+- Acts as a router based on authentication state
+- Checks if a user is currently logged in
+- Redirects to TaskListScreen if a user is logged in, otherwise to LoginScreen
+- Provides a seamless user experience by maintaining login state between app sessions
+
+---
+
+**Login**
+
+The `LoginScreen` provides the user interface for authentication. It allows existing users to log in to the application using their credentials.
+
+```dart
+import 'package:flutter/material.dart';
+import '../../services/user_service.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _userService = UserService();
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      final success = _userService.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+
+      if (success) {
+        debugPrint("Login: ${_userService.currentUser}");
+        Navigator.of(context).pushReplacementNamed('/tasks');
+      } else {
+        setState(() => _errorMessage = ('Invalid username or password'));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Login')),
+      body: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your username';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+              ),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _login,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: const Text('Login'),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/register');
+                },
+                child: const Text('Don\'t have an account? Register'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### Key Components
+
+#### Form Management
+
+```dart
+final _formKey = GlobalKey<FormState>();
+final _usernameController = TextEditingController();
+final _passwordController = TextEditingController();
+final _userService = UserService();
+String? _errorMessage;
+```
+
+- Uses a form key to manage form validation
+- Implements text controllers for username and password fields
+- Maintains an error message state for displaying authentication failures
+
+#### Authentication Logic
+
+```dart
+void _login() async {
+  if (_formKey.currentState!.validate()) {
+    final success = _userService.login(
+      _usernameController.text,
+      _passwordController.text,
+    );
+
+    if (success) {
+      debugPrint("Login: ${_userService.currentUser}");
+      Navigator.of(context).pushReplacementNamed('/tasks');
+    } else {
+      setState(() => _errorMessage = ('Invalid username or password'));
+    }
+  }
+}
+```
+
+- Validates the form input before attempting login
+- Calls the UserService to authenticate the user
+- Navigates to the task list screen on successful login
+- Displays an error message on failed authentication
+
+#### User Interface
+
+```dart
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: Text('Login')),
+    body: Padding(
+      padding: EdgeInsets.all(8.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Form fields and buttons
+          ],
+        ),
+      ),
+    ),
+  );
+}
+```
+
+- Presents a clean, centered form with input validation
+- Includes fields for username and password
+- Displays error messages when authentication fails
+- Provides a link to the registration screen for new users
+
+---
+
+#### Register Screen
+
+The `RegisterScreen` allows new users to create accounts in the application. It collects user credentials and optional email information.
+
+```dart
+import 'package:flutter/material.dart';
+// import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  // final _authService = AuthService();
+  final _userService = UserService();
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _register() async {
+    if (_formKey.currentState!.validate()) {
+      final success = _userService.register(
+        _usernameController.text,
+        _passwordController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Registration successful")));
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          _errorMessage = "Username Already Exists";
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Register')),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email(Optional)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a username';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a Password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters long';
+                  }
+                  return null;
+                },
+              ),
+
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _register,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: const Text('Register'),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Already have an account? Login'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### Key Components
+
+#### Form Management
+
+```dart
+final _formKey = GlobalKey<FormState>();
+final _usernameController = TextEditingController();
+final _passwordController = TextEditingController();
+final _emailController = TextEditingController();
+final _userService = UserService();
+String? _errorMessage;
+```
+
+- Uses a form key to manage form validation
+- Implements text controllers for username, password, and optional email fields
+- Maintains an error message state for displaying registration failures
+
+#### Registration Logic
+
+```dart
+void _register() async {
+  if (_formKey.currentState!.validate()) {
+    final success = _userService.register(
+      _usernameController.text,
+      _passwordController.text,
+      email: _emailController.text.isNotEmpty ? _emailController.text : null,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Registration successful")));
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        _errorMessage = "Username Already Exists";
+      });
+    }
+  }
+}
+```
+
+- Validates the form input before attempting registration
+- Calls the UserService to create a new user account
+- Shows a success message and returns to the login screen on successful registration
+- Displays an error message if the username is already taken
+
+#### User Interface
+
+```dart
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: const Text('Register')),
+    body: Padding(
+      padding: EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Form fields and buttons
+          ],
+        ),
+      ),
+    ),
+  );
+}
+```
+
+- Presents a clean, centered form with input validation
+- Includes fields for email (optional), username, and password
+- Enforces password strength requirements
+- Displays error messages when registration fails
+- Provides a link back to the login screen for existing users
+
+---
+
+**Task List Screen**
+
+The `TaskListScreen` is the main interface for viewing, creating, updating, and deleting tasks. It displays the current user's tasks and provides functionality for task management.
+
+```dart
+class TaskListScreen extends StatefulWidget {
+  const TaskListScreen({super.key});
+
+  @override
+  State<TaskListScreen> createState() => _TaskListScreenState();
+ // omitted because it's too long
+}
+```
+
+#### Key Components
+
+#### State Management
+
+```dart
+final TaskService _taskService = TaskService();
+final UserService _userService = UserService();
+List<MapEntry<dynamic, Task>> _tasks = [];
+
+final _titleController = TextEditingController();
+final _descriptionController = TextEditingController();
+```
+
+- Maintains a list of tasks with their Hive keys
+- Uses text controllers for task title and description input
+- Leverages TaskService and UserService for data operations
+
+#### Task Loading
+
+```dart
+@override
+void initState() {
+  super.initState();
+  debugPrint("Current user: ${_userService.currentUser?.username}");
+  _loadTasks();
+}
+
+void _loadTasks() {
+  setState(() {
+    _tasks = _taskService.getCurrentUserTasks();
+  });
+}
+```
+
+- Loads tasks when the screen initializes
+- Updates the UI when tasks change
+- Filters tasks to show only those belonging to the current user
+
+**Task Operations**
+
+**Add Task**
+
+```dart
+void _showAddTaskDialog() {
+  _titleController.clear();
+  _descriptionController.clear();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Add Task'),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Form fields
+          ],
+        ),
+      ),
+      actions: [
+        // Cancel and Add buttons
+      ],
+    ),
+  );
+}
+```
+
+- Displays a dialog for creating new tasks
+- Clears input fields when opened
+- Validates that title and description are not empty
+- Shows success or failure messages
+- Refreshes the task list after adding a task
+
+**Edit Task**
+
+```dart
+void _showEditTaskDialog(int taskKey, Task task) {
+  _titleController.text = task.title;
+  _descriptionController.text = task.description;
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Edit Task'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Form fields pre-filled with task data
+          ],
+        ),
+      ),
+      actions: [
+        // Cancel and Update buttons
+      ],
+    ),
+  );
+}
+```
+
+- Displays a dialog for editing existing tasks
+- Pre-fills input fields with current task data
+- Validates that title and description are not empty
+- Shows success or failure messages
+- Refreshes the task list after updating a task
+
+**Toggle Task Completion**
+
+```dart
+void _toggleTaskCompletion(int taskKey) {
+  final task = _taskService.getTask(taskKey);
+
+  if (task != null) {
+    _taskService.updateTask(
+      taskKey,
+      task.title,
+      task.description,
+      !task.completed,
+    );
+    _loadTasks();
+  }
+}
+```
+
+- Toggles the completion status of a task
+- Preserves the task title and description
+- Updates the UI to reflect the new status
+
+**Delete Task**
+
+```dart
+void _deleteTask(int taskKey) {
+  _taskService.deleteTask(taskKey);
+}
+```
+
+- Removes a task from storage
+- Implemented with swipe-to-delete gesture in the UI
+
+**User Interface**
+
+```dart
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('${_userService.currentUser?.username}'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () {
+            _userService.logout();
+            Navigator.of(context).pushReplacementNamed('/login');
+          },
+          tooltip: 'Logout',
+        ),
+      ],
+    ),
+    body: _tasks.isEmpty
+        ? Center(child: Text("No Tasks Yet. Add your first task"))
+        : ListView.builder(
+            // Task list implementation
+          ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: _showAddTaskDialog,
+      child: const Icon(Icons.add),
+    ),
+  );
+}
+```
+
+- Displays the current user's username in the app bar
+- Provides a logout button in the app bar
+- Shows a message when no tasks exist
+- Renders tasks in a scrollable list
+- Implements swipe-to-delete functionality for tasks
+- Includes checkboxes for toggling task completion
+- Provides edit buttons for modifying tasks
+- Features a floating action button for adding new tasks
