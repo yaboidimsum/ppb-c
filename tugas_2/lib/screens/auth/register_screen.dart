@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+// import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -13,7 +14,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailController = TextEditingController();
-  final _authService = AuthService();
+  // final _authService = AuthService();
+  final _userService = UserService();
   String? _errorMessage;
 
   @override
@@ -26,7 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
-      final success = _authService.register(
+      final success = _userService.register(
         _usernameController.text,
         _passwordController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,

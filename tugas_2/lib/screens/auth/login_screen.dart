@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+// import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +13,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  // final _userService = AuthService();
+  final _userService = UserService();
   String? _errorMessage;
 
   @override
@@ -24,12 +26,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
-      final success = _authService.login(
+      final success = _userService.login(
         _usernameController.text,
         _passwordController.text,
       );
 
       if (success) {
+        debugPrint("Login: ${_userService.currentUser}");
         Navigator.of(context).pushReplacementNamed('/tasks');
       } else {
         setState(() => _errorMessage = ('Invalid username or password'));

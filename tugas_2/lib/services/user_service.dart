@@ -30,12 +30,16 @@ class UserService {
   }
 
   //Register a new user
-  bool register(String username, String password) {
-    if (!_userHiveService.userExists(username)) {
-      _userHiveService.saveUser(User(username: username, password: password));
-      return true;
+  bool register(String username, String password, {String? email}) {
+    if (_userHiveService.userExists(username)) {
+      return false;
     }
-    return false;
+
+    final user = User(username: username, password: password, email: email);
+
+    _userHiveService.saveUser(user);
+
+    return true;
   }
 
   bool login(String username, String password) {
