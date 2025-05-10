@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "918899889841",
+    "project_id": "auth-notif-tugas-3",
+    "storage_bucket": "auth-notif-tugas-3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918899889841:android:c8fe52ec3c13057ffdb490",
+        "android_client_info": {
+          "package_name": "com.example.tugas_3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk3D3PM7imspD6-zEqbIBIoXF1DjxbKRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
